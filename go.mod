@@ -1,4 +1,4 @@
-module github.com/michellekoegelenberg/myfirstblockchain
+module github.com/michellekoegelenberg/advanced-blockchain
 
 go 1.15
 

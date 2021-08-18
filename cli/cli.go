@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/michellekoegelenberg/myfirstblockchain/blockchain"
+	"github.com/michellekoegelenberg/advanced-blockchain/blockchain"
 )
 
 //Chapter 4: Simplify by removing the blockchain from the CLI struct
