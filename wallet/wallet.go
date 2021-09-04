@@ -115,3 +115,5 @@ func Checksum(payload []byte) []byte {
 // and put through a base 58 encoder algo to create address
 
 // 7. Create base58 encode/decode funcs in utils.go then go to 8 above
+
+// Add a comment
