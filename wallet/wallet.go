@@ -5,7 +5,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
-	"fmt"
 	"log"
 
 	"golang.org/x/crypto/ripemd160"
@@ -35,9 +34,10 @@ func (w Wallet) Address() []byte {
 
 	address := Base58Encode(fullHash)
 
-	fmt.Printf("pub key: %x\n", w.PublicKey)
+	//End of part 5: Comment out code below as well as code in main.go
+	/* fmt.Printf("pub key: %x\n", w.PublicKey)
 	fmt.Printf("pub hash: %x\n", pubHash)
-	fmt.Printf("address: %x\n", address)
+	fmt.Printf("address: %x\n", address) */
 
 	return address
 
@@ -52,6 +52,8 @@ func (w Wallet) Address() []byte {
 
 		Address starts with the same number due to const version no. we're appending to all of our addresses
 	*/
+
+	// After this step, fo to 9 below
 
 }
 
@@ -100,9 +102,9 @@ func PublicKeyHash(pubKey []byte) []byte {
 
 // 5. Add version to PHK
 
-//.6 From vPKH, creats checksum (4 bytes)
-// First define cs len (const above)
-//then create cs func below, which will run PKH through SHA twice and use only
+//.6 From vPKH, creates checksum (4 bytes)
+// First define checksum len (const above)
+// then create cs func below, which will run PKH through SHA twice and use only
 //first 4 bytes (Checksum)
 func Checksum(payload []byte) []byte {
 	firstHash := sha256.Sum256(payload)
@@ -116,4 +118,5 @@ func Checksum(payload []byte) []byte {
 
 // 7. Create base58 encode/decode funcs in utils.go then go to 8 above
 
-// Add a comment
+// 9. Need to add a persistence layer to wallet module so that the user can save Pub and Priv on local computer
+// Create wallets.go

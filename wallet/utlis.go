@@ -21,3 +21,5 @@ func Base58Decode(input []byte) []byte {
 
 	return decode
 }
+
+// Characters missing from Base58 are 0OlI+/
