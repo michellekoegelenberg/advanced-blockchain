@@ -120,3 +120,5 @@ func Checksum(payload []byte) []byte {
 
 // 9. Need to add a persistence layer to wallet module so that the user can save Pub and Priv on local computer
 // Create wallets.go
+
+// See end of part 5 in comments above
