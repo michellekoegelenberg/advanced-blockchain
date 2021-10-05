@@ -9,13 +9,14 @@ import (
 	"strconv"
 
 	"github.com/michellekoegelenberg/advanced-blockchain/blockchain"
-	"github.com/michellekoegelenberg/advanced-blockchain/wallet"
+	"github.com/michellekoegelenberg/advanced-blockchain/wallet" //Chap 5
 )
 
 //Chapter 4: Simplify by removing the blockchain from the CLI struct
 type CommandLine struct{}
 
 //Add to our print usage func (rem add block, add 3 new commands)
+//Chap 5: Add createwallet and listaddresses after completing wallets.go
 func (cli *CommandLine) printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println(" getbalance -address ADDRESS - get the balance for an address")
@@ -26,8 +27,8 @@ func (cli *CommandLine) printUsage() {
 	fmt.Println(" listaddresses - Lists the addresses in our wallet file")
 }
 
-// inside commandline module import the wallet module (above) then create funcs
-// List addresses
+// Chap 5: inside commandline module import the wallet module (above) then create funcs
+// Chap 5: List addresses
 func (cli *CommandLine) listAddresses() {
 	wallets, _ := wallet.CreateWallets()
 	addresses := wallets.GetAllAddresses()
@@ -37,7 +38,7 @@ func (cli *CommandLine) listAddresses() {
 	}
 }
 
-//Creating a single wallet
+// Chap 5: Creating a single wallet
 func (cli *CommandLine) createWallet() {
 	wallets, _ := wallet.CreateWallets()
 	address := wallets.AddWallet()
@@ -106,6 +107,8 @@ func (cli *CommandLine) send(from, to string, amount int) {
 	fmt.Println("Success!")
 }
 
+// Chap 5: Add createwallet and listaddresses commands
+//Chap 5: Add 2 new cases and if statements
 func (cli *CommandLine) Run() {
 	cli.validateArgs()
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
