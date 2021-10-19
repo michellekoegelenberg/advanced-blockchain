@@ -12,11 +12,10 @@ import (
 	"github.com/michellekoegelenberg/advanced-blockchain/wallet" //Chap 5
 )
 
-// add reindexUTXO to every level
-// edit GetBalance Func and send func
-// edit addblock meth in bc.go
-// add to create BCUTXOSet := blockchain.UTXOSet{chain}
-//	UTXOSet.Reindex()
+/*
+Send func
+Go to bc.go file
+*/
 type CommandLine struct{}
 
 func (cli *CommandLine) printUsage() {
@@ -27,6 +26,8 @@ func (cli *CommandLine) printUsage() {
 	fmt.Println(" send -from FROM -to TO -amount AMOUNT - Send amount of coins")
 	fmt.Println(" createwallet - Creates a new Wallet")
 	fmt.Println(" listaddresses - Lists the addresses in our wallet file")
+	fmt.Println(" reindexutxo - Rebuilds the UTXO set")
+
 }
 
 func (cli *CommandLine) listAddresses() {
@@ -123,7 +124,8 @@ func (cli *CommandLine) send(from, to string, amount int) {
 	defer chain.Database.Close()
 
 	tx := blockchain.NewTransaction(from, to, amount, &UTXOSet)
-	block := chain.AddBlock([]*blockchain.Transaction{tx})
+	cbTx := blockchain.CoinbaseTx(from, "")
+	block := chain.AddBlock([]*blockchain.Transaction{cbTx, tx})
 	UTXOSet.Update(block)
 	fmt.Println("Success!")
 }

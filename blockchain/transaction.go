@@ -17,8 +17,10 @@ import (
 )
 
 /*
-Change chain to UTXO or UTXO.Blockchain in NewTransaction where comment says HERE
-Go to cli*/
+Delete SetId Meth
+Edit Coinbase tx
+Go to cli.go
+*/
 
 type Transaction struct {
 	ID      []byte
@@ -159,16 +161,19 @@ func (tx Transaction) String() string {
 	return strings.Join(lines, "\n")
 }
 
-func CoinbaseTx(to, data string) *Transaction {
+func CoinbaseTx(to, data string) *Transaction { //Random data, reward is 20
 	if data == "" {
-		data = fmt.Sprintf("Coins to %s", to)
+		randData := make([]byte, 24)
+		_, err := rand.Read(randData)
+		Handle(err)
+		data = fmt.Sprintf("%x", randData)
 	}
 
-	txin := TxInput{[]byte{}, -1, nil, []byte(data)} // Chap 6.8 (Four fields instead of three)
-	txout := NewTXOutput(100, to)                    // 6.8 replace with new func
+	txin := TxInput{[]byte{}, -1, nil, []byte(data)}
+	txout := NewTXOutput(20, to)
 
-	tx := Transaction{nil, []TxInput{txin}, []TxOutput{*txout}} // 6.8 turn into pointer, go to NewTx func below
-	tx.SetID()
+	tx := Transaction{nil, []TxInput{txin}, []TxOutput{*txout}}
+	tx.ID = tx.Hash()
 
 	return &tx
 }
@@ -209,19 +214,6 @@ func NewTransaction(from, to string, amount int, UTXO *UTXOSet) *Transaction { /
 	UTXO.Blockchain.SignTransaction(&tx, w.PrivateKey) //HERE
 
 	return &tx
-}
-
-func (tx *Transaction) SetID() {
-	var encoded bytes.Buffer
-	var hash [32]byte
-
-	encode := gob.NewEncoder(&encoded)
-	err := encode.Encode(tx)
-	Handle(err)
-
-	hash = sha256.Sum256(encoded.Bytes())
-	tx.ID = hash[:]
-
 }
 
 func (tx *Transaction) IsCoinbase() bool {
