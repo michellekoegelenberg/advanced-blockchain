@@ -312,3 +312,5 @@ func (bc *BlockChain) VerifyTransaction(tx *Transaction) bool { // return a bool
 }
 
 // Now clean up errors created by changing txn input and output struct and removing old methods (go to 6.2 above)
+
+//dsd
