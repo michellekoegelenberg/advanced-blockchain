@@ -17,8 +17,8 @@ import (
 )
 
 /*
-Chap 6.8 Replace all the places whhere we've created txn inputs and outputs (after we've removed errors in bc.go)
-Start with CoinbaseTx */
+Change chain to UTXO or UTXO.Blockchain in NewTransaction where comment says HERE
+Go to cli*/
 
 type Transaction struct {
 	ID      []byte
@@ -26,7 +26,6 @@ type Transaction struct {
 	Outputs []TxOutput
 }
 
-//1. Like the block serialise one in block file
 func (tx Transaction) Serialize() []byte {
 	var encoded bytes.Buffer
 
@@ -39,21 +38,19 @@ func (tx Transaction) Serialize() []byte {
 	return encoded.Bytes()
 }
 
-// 2. Use as Tx ID
 func (tx *Transaction) Hash() []byte {
 	var hash [32]byte
 
 	txCopy := *tx
-	txCopy.ID = []byte{} // Empty out Tx's ID
+	txCopy.ID = []byte{}
 
 	hash = sha256.Sum256(txCopy.Serialize())
 
 	return hash[:]
 }
 
-// 3. Need methods to to sign and verify transactions
 func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transaction) {
-	if tx.IsCoinbase() { // See if coinbase (no need to sign coinbase)
+	if tx.IsCoinbase() {
 		return
 	}
 
@@ -63,7 +60,7 @@ func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transac
 		}
 	}
 
-	txCopy := tx.TrimmedCopy() // Copy of out Tx
+	txCopy := tx.TrimmedCopy()
 
 	for inId, in := range txCopy.Inputs {
 		prevTX := prevTXs[hex.EncodeToString(in.ID)]
@@ -80,8 +77,6 @@ func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transac
 
 	}
 }
-
-// 4. Create verify and trimmed copy method
 
 func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool { // Verify each of the transactions
 	if tx.IsCoinbase() {
@@ -103,8 +98,6 @@ func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool { // Verify e
 		txCopy.Inputs[inId].PubKey = prevTx.Outputs[in.Out].PubKeyHash
 		txCopy.ID = txCopy.Hash()
 		txCopy.Inputs[inId].PubKey = nil
-
-		// Unpack all the data. Deconstruct
 
 		r := big.Int{}
 		s := big.Int{}
@@ -128,8 +121,6 @@ func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool { // Verify e
 	return true
 }
 
-// 5. add TrimmedCopy
-
 func (tx *Transaction) TrimmedCopy() Transaction {
 	var inputs []TxInput
 	var outputs []TxOutput
@@ -147,7 +138,6 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	return txCopy
 }
 
-// 5. Convert tx into string rep to see in command line
 func (tx Transaction) String() string {
 	var lines []string
 
@@ -169,8 +159,6 @@ func (tx Transaction) String() string {
 	return strings.Join(lines, "\n")
 }
 
-// 6. Move over to blockchain.go file
-
 func CoinbaseTx(to, data string) *Transaction {
 	if data == "" {
 		data = fmt.Sprintf("Coins to %s", to)
@@ -185,17 +173,16 @@ func CoinbaseTx(to, data string) *Transaction {
 	return &tx
 }
 
-func NewTransaction(from, to string, amount int, chain *BlockChain) *Transaction {
+func NewTransaction(from, to string, amount int, UTXO *UTXOSet) *Transaction { //HERE
 	var inputs []TxInput
 	var outputs []TxOutput
 
-	//6.9 Connect our wallets module
 	wallets, err := wallet.CreateWallets()
 	Handle(err)
 	w := wallets.GetWallet(from)
 	pubKeyHash := wallet.PublicKeyHash(w.PublicKey)
 
-	acc, validOutputs := chain.FindSpendableOutputs(pubKeyHash, amount) //6.9 Replace from with pubkeyhash
+	acc, validOutputs := UTXO.FindSpendableOutputs(pubKeyHash, amount) //HERE
 
 	if acc < amount {
 		log.Panic("Error: not enough funds")
@@ -218,8 +205,8 @@ func NewTransaction(from, to string, amount int, chain *BlockChain) *Transaction
 	}
 
 	tx := Transaction{nil, inputs, outputs}
-	tx.ID = tx.Hash() //Change SetID to hash and signTxn
-	chain.SignTransaction(&tx, w.PrivateKey)
+	tx.ID = tx.Hash()                                  //Change SetID to hash and signTxn
+	UTXO.Blockchain.SignTransaction(&tx, w.PrivateKey) //HERE
 
 	return &tx
 }

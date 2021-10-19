@@ -111,7 +111,7 @@ func InitBlockChain(address string) *BlockChain {
 	return &blockchain
 }
 
-func (chain *BlockChain) AddBlock(transactions []*Transaction) {
+func (chain *BlockChain) AddBlock(transactions []*Transaction) *Block {
 	var lastHash []byte
 
 	err := chain.Database.View(func(txn *badger.Txn) error {
@@ -140,7 +140,7 @@ func (chain *BlockChain) AddBlock(transactions []*Transaction) {
 
 	})
 	Handle(err)
-
+	return newBlock
 }
 
 func (chain *BlockChain) Iterator() *BlockChainIterator {
@@ -175,10 +175,13 @@ func (iter *BlockChainIterator) Next() *Block {
 
 }
 
-// Chap 6.2 (see 6.1 below)
-// remove string/address, add pubkeyhash/[]byte and replace everywhere where addr was referenced
-func (chain *BlockChain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
-	var unspentTxs []Transaction
+// 8. Move FindUnspentTransactions to utxo file
+
+// 4. Continue from utxo
+// Change so corresponds with output struct created in utxo
+
+func (chain *BlockChain) FindUTXO() map[string]TxOutputs {
+	UTXO := make(map[string]TxOutputs)
 	spentTXOs := make(map[string][]int)
 
 	iter := chain.Iterator()
@@ -188,6 +191,7 @@ func (chain *BlockChain) FindUnspentTransactions(pubKeyHash []byte) []Transactio
 
 		for _, tx := range block.Transactions {
 			txID := hex.EncodeToString(tx.ID)
+
 		Outputs:
 			for outIdx, out := range tx.Outputs {
 				if spentTXOs[txID] != nil {
@@ -196,72 +200,27 @@ func (chain *BlockChain) FindUnspentTransactions(pubKeyHash []byte) []Transactio
 							continue Outputs
 						}
 					}
-
 				}
-				if out.IsLockedWithKey(pubKeyHash) { //Update with new meth
-					unspentTxs = append(unspentTxs, *tx)
-				}
-
+				outs := UTXO[txID]
+				outs.Outputs = append(outs.Outputs, out)
+				UTXO[txID] = outs
 			}
-
 			if tx.IsCoinbase() == false {
 				for _, in := range tx.Inputs {
-					if in.UsesKey(pubKeyHash) { // Update with new meth
-						inTxID := hex.EncodeToString(in.ID)
-						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Out)
-					}
+					inTxID := hex.EncodeToString(in.ID)
+					spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Out)
 				}
 			}
 		}
+
 		if len(block.PrevHash) == 0 {
 			break
 		}
 	}
-
-	return unspentTxs
+	return UTXO
 }
 
-// Repeat same process
-func (chain *BlockChain) FindUTXO(pubKeyHash []byte) []TxOutput {
-	var UTXOs []TxOutput
-	unspentTransactions := chain.FindUnspentTransactions(pubKeyHash) //Here
-
-	for _, tx := range unspentTransactions {
-		for _, out := range tx.Outputs {
-			if out.IsLockedWithKey(pubKeyHash) { //Here
-				UTXOs = append(UTXOs, out)
-			}
-		}
-	}
-	return UTXOs
-}
-
-// Same here
-func (chain *BlockChain) FindSpendableOutputs(pubKeyHash []byte, amount int) (int, map[string][]int) {
-	unspentOuts := make(map[string][]int)
-	unspentTxs := chain.FindUnspentTransactions(pubKeyHash) // Here
-	accumulated := 0
-
-Work:
-	for _, tx := range unspentTxs {
-		txID := hex.EncodeToString(tx.ID)
-
-		for outIdx, out := range tx.Outputs {
-			if out.IsLockedWithKey(pubKeyHash) && accumulated < amount { // Here, then go to txn.go file
-				accumulated += out.Value
-				unspentOuts[txID] = append(unspentOuts[txID], outIdx)
-
-				if accumulated >= amount {
-					break Work
-				}
-			}
-		}
-	}
-
-	return accumulated, unspentOuts
-}
-
-// Chap 6.1 Create a few methods for the bc which will allow us to find, sign and verify txns
+// Reindex meth in utxo.go
 
 func (bc *BlockChain) FindTransaction(ID []byte) (Transaction, error) { //Find
 	iter := bc.Iterator()
@@ -283,8 +242,6 @@ func (bc *BlockChain) FindTransaction(ID []byte) (Transaction, error) { //Find
 	return Transaction{}, errors.New("Transaction does not exist")
 }
 
-// Sign
-
 func (bc *BlockChain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey) {
 	prevTXs := make(map[string]Transaction)
 
@@ -297,8 +254,6 @@ func (bc *BlockChain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey)
 	tx.Sign(privKey, prevTXs) // go through map and sign all the txns independently
 }
 
-// Verify. Do roughly the same as above, just verify
-
 func (bc *BlockChain) VerifyTransaction(tx *Transaction) bool { // return a bool
 	prevTXs := make(map[string]Transaction)
 
@@ -310,7 +265,3 @@ func (bc *BlockChain) VerifyTransaction(tx *Transaction) bool { // return a bool
 
 	return tx.Verify(prevTXs) // return a bool
 }
-
-// Now clean up errors created by changing txn input and output struct and removing old methods (go to 6.2 above)
-
-//dsd
