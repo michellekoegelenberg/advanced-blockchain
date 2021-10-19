@@ -13,6 +13,7 @@ require (
 	github.com/mmcloughlin/avo v0.0.0-20201105074841-5d2f697d268f // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.0 // indirect
+	github.com/vrecan/death/v3 v3.0.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/net v0.0.0-20210420072503-d25e30425868 // indirect
