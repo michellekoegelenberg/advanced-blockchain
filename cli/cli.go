@@ -12,11 +12,8 @@ import (
 	"github.com/michellekoegelenberg/advanced-blockchain/wallet" //Chap 5
 )
 
-//Chapter 4: Simplify by removing the blockchain from the CLI struct
 type CommandLine struct{}
 
-//Add to our print usage func (rem add block, add 3 new commands)
-//Chap 5: Add createwallet and listaddresses after completing wallets.go
 func (cli *CommandLine) printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println(" getbalance -address ADDRESS - get the balance for an address")
@@ -27,8 +24,6 @@ func (cli *CommandLine) printUsage() {
 	fmt.Println(" listaddresses - Lists the addresses in our wallet file")
 }
 
-// Chap 5: inside commandline module import the wallet module (above) then create funcs
-// Chap 5: List addresses
 func (cli *CommandLine) listAddresses() {
 	wallets, _ := wallet.CreateWallets()
 	addresses := wallets.GetAllAddresses()
@@ -38,7 +33,6 @@ func (cli *CommandLine) listAddresses() {
 	}
 }
 
-// Chap 5: Creating a single wallet
 func (cli *CommandLine) createWallet() {
 	wallets, _ := wallet.CreateWallets()
 	address := wallets.AddWallet()
@@ -46,7 +40,6 @@ func (cli *CommandLine) createWallet() {
 
 	fmt.Printf("New address is: %s\n", address)
 
-	// After this add two new flags + 2 new cases and if statements to run meth below
 }
 
 func (cli *CommandLine) validateArgs() {
@@ -56,8 +49,7 @@ func (cli *CommandLine) validateArgs() {
 	}
 }
 
-//Chap 4: Remove AddBlock
-//and add to Print Chain
+// Chap 6: Print out all of our txns
 func (cli *CommandLine) printChain() {
 	chain := blockchain.ContinueBlockChain("")
 	defer chain.Database.Close()
@@ -66,10 +58,13 @@ func (cli *CommandLine) printChain() {
 	for {
 		block := iter.Next()
 
-		fmt.Printf("Prev. hash: %x\n", block.PrevHash)
 		fmt.Printf("Hash: %x\n", block.Hash)
+		fmt.Printf("Prev. hash: %x\n", block.PrevHash)
 		pow := blockchain.NewProof(block)
 		fmt.Printf("PoW: %s\n", strconv.FormatBool(pow.Validate()))
+		for _, tx := range block.Transactions {
+			fmt.Println(tx)
+		}
 		fmt.Println()
 
 		if len(block.PrevHash) == 0 {
@@ -79,17 +74,28 @@ func (cli *CommandLine) printChain() {
 }
 
 func (cli *CommandLine) createBlockChain(address string) {
+	if !wallet.ValidateAddress(address) {
+		log.Panic("Address is not Valid")
+	}
+
 	chain := blockchain.InitBlockChain(address)
 	chain.Database.Close()
 	fmt.Println("Finished!")
 }
 
+//Chap 6: Decode, get pkh pass into findutxo func and create if statement for address
+// Add if statement to every command where we're passing in an address (CreateBC cmmnd, send cmmnd)
 func (cli *CommandLine) getBalance(address string) {
+	if !wallet.ValidateAddress(address) {
+		log.Panic("Address is not Valid")
+	}
 	chain := blockchain.ContinueBlockChain(address)
 	defer chain.Database.Close()
 
 	balance := 0
-	UTXOs := chain.FindUTXO(address)
+	pubKeyHash := wallet.Base58Decode([]byte(address))
+	pubKeyHash = pubKeyHash[1 : len(pubKeyHash)-4]
+	UTXOs := chain.FindUTXO(pubKeyHash)
 
 	for _, out := range UTXOs {
 		balance += out.Value
@@ -98,7 +104,15 @@ func (cli *CommandLine) getBalance(address string) {
 	fmt.Printf("Balance of %s: %d\n", address, balance)
 }
 
+//Chap 6. Create two address if statements (one for to and one for from)
 func (cli *CommandLine) send(from, to string, amount int) {
+	if !wallet.ValidateAddress(to) {
+		log.Panic("Address is not Valid")
+	}
+
+	if !wallet.ValidateAddress(from) {
+		log.Panic("Address is not Valid")
+	}
 	chain := blockchain.ContinueBlockChain(from)
 	defer chain.Database.Close()
 
@@ -107,8 +121,6 @@ func (cli *CommandLine) send(from, to string, amount int) {
 	fmt.Println("Success!")
 }
 
-// Chap 5: Add createwallet and listaddresses commands
-//Chap 5: Add 2 new cases and if statements
 func (cli *CommandLine) Run() {
 	cli.validateArgs()
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
