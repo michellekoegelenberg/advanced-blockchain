@@ -12,7 +12,8 @@ import (
 
 // 4. Load file meth (load all of the wallets from our file)
 
-func (ws *Wallets) LoadFile() error {
+func (ws *Wallets) LoadFile(nodeId string) error {
+	walletFile := fmt.Sprintf(walletFile, nodeId)
 	if _, err := os.Stat(walletFile); os.IsNotExist(err) { // First check if Wallet file exists or not
 		return err
 	}
@@ -39,7 +40,9 @@ func (ws *Wallets) LoadFile() error {
 
 // Now create 'Create Wallets Func' under Wallets Struct
 
-const walletFile = "./tmp/wallets.data" //Wallet mod is separate from the BC module. This points to where we want to store on our disk
+const walletFile = "./tmp/wallets_%s.data"
+
+//Wallet mod is separate from the BC module. This points to where we want to store on our disk
 
 // 1.Define the shape that our data will take (map)
 
@@ -49,10 +52,10 @@ type Wallets struct {
 }
 
 // 5. Create Wallets Func which will populate our wallets
-func CreateWallets() (*Wallets, error) {
+func CreateWallets(nodeId string) (*Wallets, error) {
 	wallets := Wallets{}                       // Create W struct
 	wallets.Wallets = make(map[string]*Wallet) // Make the map for the wallets field inside wallets struct
-	err := wallets.LoadFile()                  // Load from file
+	err := wallets.LoadFile(nodeId)            // Load from file
 	return &wallets, err                       // return wallets structure
 }
 
@@ -84,8 +87,10 @@ func (ws *Wallets) AddWallet() string {
 
 // 2. Create a save file meth on the wallets structure
 
-func (ws Wallets) SaveFile() {
+func (ws Wallets) SaveFile(nodeId string) {
 	var content bytes.Buffer //create bytes buffer so we can store all of the content we want to save to the file
+	walletFile := fmt.Sprintf(walletFile, nodeId)
+
 	// Use Gob encoding lib to encode the buffers into the file
 	// Need to register that we're using the e.p256 algo
 	gob.Register(elliptic.P256())

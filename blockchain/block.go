@@ -4,15 +4,21 @@ import (
 	"bytes"
 	"encoding/gob"
 	"log"
+	"time"
 )
 
 //Insert merkle into hash txns
+// Will have multiple copies of BC, so need to modify the Block struct to contain height (easy to get index)
+// Also, timestamp is good (uniqueness of each block)
+// Need to mofify CreateBlock func to reflect this
 
 type Block struct {
+	Timestamp    int64
 	Hash         []byte
 	Transactions []*Transaction
 	PrevHash     []byte
 	Nonce        int
+	Height       int
 }
 
 func (b *Block) HashTransactions() []byte {
@@ -28,9 +34,9 @@ func (b *Block) HashTransactions() []byte {
 	//Now the root of the tree will serve as the unique identifier for each of our block's transactions
 }
 
-func CreateBlock(txs []*Transaction, prevHash []byte) *Block {
-	block := &Block{[]byte{}, txs, prevHash, 0} //Block gets init
-	pow := NewProof(block)                      //Init pow with NewProof allows us to pair a target with each new block that gets created
+func CreateBlock(txs []*Transaction, prevHash []byte, height int) *Block {
+	block := &Block{time.Now().Unix(), []byte{}, txs, prevHash, 0, height} //Updated due to struct
+	pow := NewProof(block)                                                 //Init pow with NewProof allows us to pair a target with each new block that gets created
 	nonce, hash := pow.Run()
 
 	block.Hash = hash[:]

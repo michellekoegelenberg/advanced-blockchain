@@ -40,6 +40,16 @@ func (tx Transaction) Serialize() []byte {
 	return encoded.Bytes()
 }
 
+//1. Add des func (works the same as the others)
+func DeserializeTransaction(data []byte) Transaction {
+	var transaction Transaction
+
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	err := decoder.Decode(&transaction)
+	Handle(err)
+	return transaction //decode into transaction struct
+}
+
 func (tx *Transaction) Hash() []byte {
 	var hash [32]byte
 
@@ -178,16 +188,12 @@ func CoinbaseTx(to, data string) *Transaction { //Random data, reward is 20
 	return &tx
 }
 
-func NewTransaction(from, to string, amount int, UTXO *UTXOSet) *Transaction { //HERE
+func NewTransaction(w *wallet.Wallet, to string, amount int, UTXO *UTXOSet) *Transaction {
 	var inputs []TxInput
 	var outputs []TxOutput
 
-	wallets, err := wallet.CreateWallets()
-	Handle(err)
-	w := wallets.GetWallet(from)
 	pubKeyHash := wallet.PublicKeyHash(w.PublicKey)
-
-	acc, validOutputs := UTXO.FindSpendableOutputs(pubKeyHash, amount) //HERE
+	acc, validOutputs := UTXO.FindSpendableOutputs(pubKeyHash, amount)
 
 	if acc < amount {
 		log.Panic("Error: not enough funds")
@@ -198,20 +204,22 @@ func NewTransaction(from, to string, amount int, UTXO *UTXOSet) *Transaction { /
 		Handle(err)
 
 		for _, out := range outs {
-			input := TxInput{txID, out, nil, w.PublicKey} //Replace old one with one with 4 fields. Final field pk of the wallet we instantiated
+			input := TxInput{txID, out, nil, w.PublicKey}
 			inputs = append(inputs, input)
 		}
 	}
 
-	outputs = append(outputs, *NewTXOutput(amount, to)) // NewTxO
+	from := fmt.Sprintf("%s", w.Address())
+
+	outputs = append(outputs, *NewTXOutput(amount, to))
 
 	if acc > amount {
-		outputs = append(outputs, *NewTXOutput(acc-amount, from)) //NewTxo
+		outputs = append(outputs, *NewTXOutput(acc-amount, from))
 	}
 
 	tx := Transaction{nil, inputs, outputs}
-	tx.ID = tx.Hash()                                  //Change SetID to hash and signTxn
-	UTXO.Blockchain.SignTransaction(&tx, w.PrivateKey) //HERE
+	tx.ID = tx.Hash()
+	UTXO.Blockchain.SignTransaction(&tx, w.PrivateKey)
 
 	return &tx
 }
